@@ -21,7 +21,7 @@ This project is a simple chat application built in Go that utilizes RSA encrypti
 1. Clone the repository:
 
 ```bash
-$ git clone <repository-url>
+$ git clone https://github.com/Gustrb/rsa-chatapp.git
 $ cd go-chat-app
 ```
 
