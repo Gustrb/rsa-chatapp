@@ -2,11 +2,11 @@ package main
 
 import (
 	"bufio"
+	"chatapp/src/crypt"
 	"chatapp/src/utils"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"log"
@@ -15,7 +15,11 @@ import (
 	"strings"
 )
 
+var pemImpl crypt.PEM
+
 func main() {
+	pemImpl = &crypt.PEMStdlibImpl{}
+
 	if len(os.Args) != 3 {
 		fmt.Printf("Usage: %s <server address> <server port>\n", os.Args[0])
 		os.Exit(1)
@@ -39,7 +43,7 @@ func main() {
 		log.Fatalf("Failed to receive server's public key: %v", err)
 	}
 
-	block, _ := pem.Decode(serverPubBytes)
+	block, _ := pemImpl.Decode(serverPubBytes)
 	if block == nil || block.Type != "PUBLIC KEY" {
 		log.Fatalf("Invalid server public key")
 	}
@@ -66,10 +70,7 @@ func main() {
 		log.Fatalf("Failed to marshal client's public key: %v", err)
 	}
 
-	clientPubPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: clientPubBytes,
-	})
+	clientPubPEM := pemImpl.Encode(clientPubBytes, "PUBLIC KEY")
 
 	// Step 3: Send client's public key to the server
 	if err := utils.SendWithLengthPrefix(conn, clientPubPEM); err != nil {

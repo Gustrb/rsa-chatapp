@@ -1,11 +1,11 @@
 package main
 
 import (
+	"chatapp/src/crypt"
 	"chatapp/src/utils"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +13,8 @@ import (
 	"os"
 	"sync"
 )
+
+var pemImpl crypt.PEM
 
 // Client represents a connected client
 type Client struct {
@@ -37,7 +39,7 @@ func NewServer(privateKeyPath, publicKeyPath string) (*Server, error) {
 		return nil, fmt.Errorf("failed to read private key: %v", err)
 	}
 
-	privBlock, _ := pem.Decode(privBytes)
+	privBlock, _ := pemImpl.Decode(privBytes)
 	if privBlock == nil || privBlock.Type != "RSA PRIVATE KEY" {
 		return nil, fmt.Errorf("invalid private key data")
 	}
@@ -53,7 +55,7 @@ func NewServer(privateKeyPath, publicKeyPath string) (*Server, error) {
 		return nil, fmt.Errorf("failed to read public key: %v", err)
 	}
 
-	pubBlock, _ := pem.Decode(pubBytes)
+	pubBlock, _ := pemImpl.Decode(pubBytes)
 	if pubBlock == nil || pubBlock.Type != "PUBLIC KEY" {
 		return nil, fmt.Errorf("invalid public key data")
 	}
@@ -112,7 +114,7 @@ func (s *Server) handleClient(conn net.Conn) {
 		return
 	}
 
-	block, _ := pem.Decode(clientPubBytes)
+	block, _ := pemImpl.Decode(clientPubBytes)
 	if block == nil || block.Type != "PUBLIC KEY" {
 		log.Printf("Invalid public key from %s", conn.RemoteAddr())
 		return
@@ -206,6 +208,8 @@ func (s *Server) broadcast(message []byte, sender net.Conn) {
 }
 
 func main() {
+	pemImpl = &crypt.PEMStdlibImpl{}
+
 	// Initialize the server with the paths to the RSA keys
 	server, err := NewServer("../private.pem", "../public.pem")
 	if err != nil {

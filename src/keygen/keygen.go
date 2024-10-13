@@ -1,13 +1,15 @@
 package main
 
 import (
+	"chatapp/src/crypt"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"os"
 )
+
+var pemImpl crypt.PEM
 
 // generateKeys generates an RSA key pair and saves them to files.
 func generateKeys() error {
@@ -25,10 +27,7 @@ func generateKeys() error {
 	defer privFile.Close()
 
 	privBytes := x509.MarshalPKCS1PrivateKey(privateKey)
-	privPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: privBytes,
-	})
+	privPEM := pemImpl.Encode(privBytes, "RSA PRIVATE KEY")
 
 	_, err = privFile.Write(privPEM)
 	if err != nil {
@@ -47,10 +46,7 @@ func generateKeys() error {
 		return fmt.Errorf("failed to marshal public key: %v", err)
 	}
 
-	pubPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubBytes,
-	})
+	pubPEM := pemImpl.Encode(pubBytes, "PUBLIC KEY")
 
 	_, err = pubFile.Write(pubPEM)
 	if err != nil {
@@ -62,6 +58,8 @@ func generateKeys() error {
 }
 
 func main() {
+	pemImpl = &crypt.PEMStdlibImpl{}
+
 	if err := generateKeys(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
